@@ -311,6 +311,11 @@ class DCAExecutor(ExecutorBase):
 
     def control_time_limit(self):
         if self.is_expired:
+            seconds_expired = self._strategy.current_timestamp - self.end_time
+            self.logger().warning(f"DCA Executor ID: {self.config.id} - TIME_LIMIT triggered! Position expired by {seconds_expired:.1f} seconds. "
+                                  f"Trading pair: {self.config.trading_pair}, Side: {self.config.side}, "
+                                  f"Target amount: {self.config.amounts_quote}, Filled amount: {self.open_filled_amount_quote}, "
+                                  f"Time limit: {self.config.time_limit}s, Current PnL: {self.net_pnl_pct * 100:.2f}%")
             self.close_type = CloseType.TIME_LIMIT
             self.place_close_order_and_cancel_open_orders()
 
@@ -367,10 +372,18 @@ class DCAExecutor(ExecutorBase):
         This method allows strategy to stop the executor early.
         """
         if keep_position:
+            self.logger().warning(f"DCA Executor ID: {self.config.id} - EARLY_STOP triggered with position hold! "
+                                  f"Trading pair: {self.config.trading_pair}, Side: {self.config.side}, "
+                                  f"Target amount: {self.config.amounts_quote}, Filled amount: {self.open_filled_amount_quote}, "
+                                  f"Current PnL: {self.net_pnl_pct * 100:.2f}%, Keep position: {keep_position}")
             self.close_type = CloseType.POSITION_HOLD
             self.cancel_open_orders()
             self.stop()
         else:
+            self.logger().warning(f"DCA Executor ID: {self.config.id} - EARLY_STOP triggered! "
+                                  f"Trading pair: {self.config.trading_pair}, Side: {self.config.side}, "
+                                  f"Target amount: {self.config.amounts_quote}, Filled amount: {self.open_filled_amount_quote}, "
+                                  f"Current PnL: {self.net_pnl_pct * 100:.2f}%, Keep position: {keep_position}")
             self.close_type = CloseType.EARLY_STOP
             self.place_close_order_and_cancel_open_orders()
 

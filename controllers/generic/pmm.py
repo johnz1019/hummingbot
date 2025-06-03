@@ -364,6 +364,13 @@ class PMM(ControllerBase):
         executors_to_early_stop = self.filter_executors(
             executors=self.executors_info,
             filter_func=lambda x: x.is_active and x.is_trading and self.market_data_provider.time() - x.custom_info["open_order_last_update"] > self.config.cooldown_time)
+        
+        if executors_to_early_stop:
+            executor_ids = [executor.id for executor in executors_to_early_stop]
+            self.logger.warning(f"PMM Controller ID: {self.config.id} - Triggering EARLY_STOP for {len(executors_to_early_stop)} executors! "
+                                f"Trading pair: {self.config.trading_pair}, Executor IDs: {executor_ids}, "
+                                f"Cooldown time: {self.config.cooldown_time}s")
+        
         return [StopExecutorAction(
             controller_id=self.config.id,
             keep_position=True,

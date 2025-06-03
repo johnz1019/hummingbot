@@ -214,10 +214,20 @@ class TWAPExecutor(ExecutorBase):
                 self._strategy.cancel(self.config.connector_name, self.config.trading_pair, order.order_id)
 
     def early_stop(self, keep_position: bool = False):
+        total_executed = self.get_total_executed_amount_quote()
+        orders_completed = len([order for order in self._order_plan.values() if order and order.order and order.order.is_filled])
+        total_orders = len([order for order in self._order_plan.values() if order])
+        
+        self.logger().warning(f"TWAP Executor ID: {self.config.id} - EARLY_STOP triggered! "
+                              f"Trading pair: {self.config.trading_pair}, Side: {self.config.side}, "
+                              f"Target amount: {self.config.total_amount_quote}, Executed amount: {total_executed}, "
+                              f"Orders completed: {orders_completed}/{total_orders}, "
+                              f"Number of orders: {self.config.number_of_orders}, "
+                              f"Current PnL: {self.get_net_pnl_pct() * 100:.2f}%")
+        
         self.close_execution_by(CloseType.EARLY_STOP)
         self.cancel_open_orders()
         self._status = RunnableStatus.SHUTTING_DOWN
-        self.logger().info("Executor stopped early.")
 
     @property
     def filled_amount_quote(self) -> Decimal:

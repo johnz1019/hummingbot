@@ -549,6 +549,11 @@ class PositionExecutor(ExecutorBase):
         :return: None
         """
         if self.is_expired:
+            seconds_expired = self._strategy.current_timestamp - self.end_time
+            self.logger().warning(f"Executor ID: {self.config.id} - TIME_LIMIT triggered! Position expired by {seconds_expired:.1f} seconds. "
+                                  f"Trading pair: {self.config.trading_pair}, Side: {self.config.side}, "
+                                  f"Entry price: {self.entry_price}, Time limit: {self.config.triple_barrier_config.time_limit}s, "
+                                  f"Current PnL: {self.net_pnl_pct * 100:.2f}%")
             self.place_close_order_and_cancel_open_orders(close_type=CloseType.TIME_LIMIT)
 
     def place_take_profit_limit_order(self):
@@ -611,7 +616,13 @@ class PositionExecutor(ExecutorBase):
 
         :return: None
         """
-        self.close_type = CloseType.POSITION_HOLD if keep_position else CloseType.EARLY_STOP
+        close_type = CloseType.POSITION_HOLD if keep_position else CloseType.EARLY_STOP
+        self.logger().warning(f"Executor ID: {self.config.id} - EARLY_STOP triggered! "
+                              f"Trading pair: {self.config.trading_pair}, Side: {self.config.side}, "
+                              f"Entry price: {self.entry_price}, Current price: {self.current_market_price}, "
+                              f"Current PnL: {self.net_pnl_pct * 100:.2f}%, Keep position: {keep_position}, "
+                              f"Close type: {close_type.name}")
+        self.close_type = close_type
         self._status = RunnableStatus.SHUTTING_DOWN
 
     def update_tracked_orders_with_order_id(self, order_id: str):

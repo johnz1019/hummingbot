@@ -314,6 +314,18 @@ class XEMMExecutor(ExecutorBase):
         }
 
     def early_stop(self, keep_position: bool = False):
+        maker_status = "None"
+        if self.maker_order and self.maker_order.order:
+            maker_status = "Open" if self.maker_order.order.is_open else "Done"
+        
+        self.logger().warning(f"XEMM Executor ID: {self.config.id} - EARLY_STOP triggered! "
+                              f"Maker: {self.maker_connector} {self.maker_trading_pair}, "
+                              f"Taker: {self.taker_connector} {self.taker_trading_pair}, "
+                              f"Order amount: {self.config.order_amount}, "
+                              f"Maker order status: {maker_status}, "
+                              f"Current profitability: {(self._current_trade_profitability - self._tx_cost_pct) * 100:.2f}%, "
+                              f"Target profitability: {self.config.target_profitability * 100:.2f}%")
+        
         if self.maker_order and self.maker_order.order and self.maker_order.order.is_open:
             self.logger().info(f"Cancelling maker order {self.maker_order.order_id}.")
             self._strategy.cancel(self.maker_connector, self.maker_trading_pair, self.maker_order.order_id)

@@ -277,9 +277,15 @@ class GridExecutor(ExecutorBase):
 
         :return: None
         """
+        close_type = CloseType.POSITION_HOLD if keep_position else CloseType.EARLY_STOP
+        self.logger().warning(f"Grid Executor ID: {self.config.id} - EARLY_STOP triggered! "
+                              f"Trading pair: {self.config.trading_pair}, Side: {self.config.side}, "
+                              f"Grid levels: {len(self.grid_levels)}, Current PnL: {self.get_net_pnl_pct() * 100:.2f}%, "
+                              f"Position size: {self.position_size_base}, Keep position: {keep_position}, "
+                              f"Close type: {close_type.name}")
         self.cancel_open_orders()
         self._status = RunnableStatus.SHUTTING_DOWN
-        self.close_type = CloseType.POSITION_HOLD if keep_position else CloseType.EARLY_STOP
+        self.close_type = close_type
 
     def update_grid_levels(self):
         self.levels_by_state = {state: [] for state in GridLevelStates}
@@ -567,6 +573,11 @@ class GridExecutor(ExecutorBase):
             self.close_type = CloseType.POSITION_HOLD if self.config.keep_position else CloseType.STOP_LOSS
             return True
         elif self.is_expired:
+            seconds_expired = self._strategy.current_timestamp - self.end_time
+            self.logger().warning(f"Grid Executor ID: {self.config.id} - TIME_LIMIT triggered! Grid expired by {seconds_expired:.1f} seconds. "
+                                  f"Trading pair: {self.config.trading_pair}, Side: {self.config.side}, "
+                                  f"Grid levels: {len(self.grid_levels)}, Time limit: {self.config.triple_barrier_config.time_limit}s, "
+                                  f"Current PnL: {self.get_net_pnl_pct() * 100:.2f}%")
             self.close_type = CloseType.TIME_LIMIT
             return True
         elif self.trailing_stop_condition():
