@@ -13,7 +13,7 @@ from typing import Coroutine, List
 import path_util  # noqa: F401
 
 from bin.hummingbot import UIStartListener, detect_available_port
-from hummingbot import init_logging
+from hummingbot import init_logging, root_path
 from hummingbot.client.config.config_crypt import BaseSecretsManager, ETHKeyFileSecretManger
 from hummingbot.client.config.config_helpers import (
     ClientConfigAdapter,
@@ -152,6 +152,11 @@ def main():
     # If no password is given from the command line, prompt for one.
     secrets_manager_cls = ETHKeyFileSecretManger
     client_config_map = load_client_config_map_from_file()
+
+    # print current root_path
+    print(f"Current root_path: {root_path()}")
+
+
     if args.config_password is None:
         secrets_manager = login_prompt(secrets_manager_cls, style=load_style(client_config_map))
         if not secrets_manager:
