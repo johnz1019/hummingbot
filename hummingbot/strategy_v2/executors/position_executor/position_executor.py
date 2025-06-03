@@ -401,11 +401,18 @@ class PositionExecutor(ExecutorBase):
         if not self._open_order:
             if self._is_within_activation_bounds(self.config.entry_price, self.config.side,
                                                  self.config.triple_barrier_config.open_order_type):
+                self.logger().info(f"Position Executor ID: {self.config.id} - Activation bounds check passed, placing open order! "
+                                   f"Entry price: {self.config.entry_price}, Side: {self.config.side}")
                 self.place_open_order()
+            else:
+                self.logger().warning(f"Position Executor ID: {self.config.id} - Activation bounds check failed, not placing open order! "
+                                      f"Entry price: {self.config.entry_price}, Side: {self.config.side}")
         else:
             if self._open_order.order and not self._open_order.is_filled and \
                     not self._is_within_activation_bounds(self.config.entry_price, self.config.side,
                                                           self.config.triple_barrier_config.open_order_type):
+                self.logger().warning(f"Position Executor ID: {self.config.id} - Open order no longer within activation bounds, canceling! "
+                                      f"Entry price: {self.config.entry_price}, Side: {self.config.side}")
                 self.cancel_open_order()
 
     def _is_within_activation_bounds(self, order_price: Decimal, side: TradeType, order_type: OrderType) -> bool:
@@ -434,6 +441,7 @@ class PositionExecutor(ExecutorBase):
                     max_price_to_sell = order_price * (1 + activation_bounds[0])
                     return min_price_to_sell <= mid_price <= max_price_to_sell
         else:
+            self.logger().info(f"Position Executor ID: {self.config.id} - No activation bounds set - allowing execution")
             return True
 
     def place_open_order(self):

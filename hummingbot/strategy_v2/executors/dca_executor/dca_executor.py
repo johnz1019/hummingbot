@@ -285,7 +285,16 @@ class DCAExecutor(ExecutorBase):
                                          trading_pair=self.config.trading_pair)
             order_price = self.config.prices[next_level]
             if self._is_within_activation_bounds(order_price, close_price) and not self.is_expired:
+                self.logger().info(f"DCA Executor ID: {self.config.id} - Creating DCA order for level {next_level}! "
+                                   f"Order price: {order_price}, Current price: {close_price}")
                 self.create_dca_order(level=next_level)
+            else:
+                if self.is_expired:
+                    self.logger().warning(f"DCA Executor ID: {self.config.id} - Level {next_level} not created due to expiration! "
+                                          f"Order price: {order_price}, Current price: {close_price}")
+                else:
+                    self.logger().warning(f"DCA Executor ID: {self.config.id} - Level {next_level} not created due to activation bounds! "
+                                          f"Order price: {order_price}, Current price: {close_price}")
 
     def create_dca_order(self, level: int):
         """
