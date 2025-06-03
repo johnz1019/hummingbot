@@ -286,9 +286,12 @@ class DCAExecutor(ExecutorBase):
                                          trading_pair=self.config.trading_pair)
             order_price = self.config.prices[next_level]
             
-            # Get call stack for debugging
+            # Get call stack for debugging - show multiple levels
             call_stack = traceback.format_stack()
-            call_info = f"Called from: {call_stack[-2].strip()}"
+            call_info = "Call stack: " + " -> ".join([
+                f"[{i}] {frame.strip().split('/')[-1] if '/' in frame else frame.strip()}" 
+                for i, frame in enumerate(call_stack[-5:-1])  # Show last 4 levels
+            ])
             
             if self._is_within_activation_bounds(order_price, close_price) and not self.is_expired:
                 self.logger().info(f"DCA Executor ID: {self.config.id} - Creating DCA order for level {next_level}! "
@@ -386,11 +389,18 @@ class DCAExecutor(ExecutorBase):
         """
         This method allows strategy to stop the executor early.
         """
+        # Get call stack for debugging - show multiple levels
+        call_stack = traceback.format_stack()
+        caller_info = "Call stack: " + " -> ".join([
+            f"[{i}] {frame.strip().split('/')[-1] if '/' in frame else frame.strip()}" 
+            for i, frame in enumerate(call_stack[-5:-1])  # Show last 4 levels
+        ])
+        
         if keep_position:
             self.logger().warning(f"DCA Executor ID: {self.config.id} - EARLY_STOP triggered with position hold! "
                                   f"Trading pair: {self.config.trading_pair}, Side: {self.config.side}, "
                                   f"Target amount: {self.config.amounts_quote}, Filled amount: {self.open_filled_amount_quote}, "
-                                  f"Current PnL: {self.net_pnl_pct * 100:.2f}%, Keep position: {keep_position}")
+                                  f"Current PnL: {self.net_pnl_pct * 100:.2f}%, Keep position: {keep_position}. {caller_info}")
             self.close_type = CloseType.POSITION_HOLD
             self.cancel_open_orders()
             self.stop()
@@ -398,7 +408,7 @@ class DCAExecutor(ExecutorBase):
             self.logger().warning(f"DCA Executor ID: {self.config.id} - EARLY_STOP triggered! "
                                   f"Trading pair: {self.config.trading_pair}, Side: {self.config.side}, "
                                   f"Target amount: {self.config.amounts_quote}, Filled amount: {self.open_filled_amount_quote}, "
-                                  f"Current PnL: {self.net_pnl_pct * 100:.2f}%, Keep position: {keep_position}")
+                                  f"Current PnL: {self.net_pnl_pct * 100:.2f}%, Keep position: {keep_position}. {caller_info}")
             self.close_type = CloseType.EARLY_STOP
             self.place_close_order_and_cancel_open_orders()
 
