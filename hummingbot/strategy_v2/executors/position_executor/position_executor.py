@@ -2,6 +2,7 @@ import asyncio
 import logging
 from decimal import Decimal
 from typing import Dict, List, Optional, Union
+import traceback
 
 from hummingbot.connector.connector_base import ConnectorBase
 from hummingbot.core.data_type.common import OrderType, PositionAction, PriceType, TradeType
@@ -398,21 +399,25 @@ class PositionExecutor(ExecutorBase):
 
         :return: None
         """
+        # Get call stack for debugging
+        call_stack = traceback.format_stack()
+        call_info = f"Called from: {call_stack[-2].strip()}"
+        
         if not self._open_order:
             if self._is_within_activation_bounds(self.config.entry_price, self.config.side,
                                                  self.config.triple_barrier_config.open_order_type):
                 self.logger().info(f"Position Executor ID: {self.config.id} - Activation bounds check passed, placing open order! "
-                                   f"Entry price: {self.config.entry_price}, Side: {self.config.side}")
+                                   f"Entry price: {self.config.entry_price}, Side: {self.config.side}. {call_info}")
                 self.place_open_order()
             else:
                 self.logger().warning(f"Position Executor ID: {self.config.id} - Activation bounds check failed, not placing open order! "
-                                      f"Entry price: {self.config.entry_price}, Side: {self.config.side}")
+                                      f"Entry price: {self.config.entry_price}, Side: {self.config.side}. {call_info}")
         else:
             if self._open_order.order and not self._open_order.is_filled and \
                     not self._is_within_activation_bounds(self.config.entry_price, self.config.side,
                                                           self.config.triple_barrier_config.open_order_type):
                 self.logger().warning(f"Position Executor ID: {self.config.id} - Open order no longer within activation bounds, canceling! "
-                                      f"Entry price: {self.config.entry_price}, Side: {self.config.side}")
+                                      f"Entry price: {self.config.entry_price}, Side: {self.config.side}. {call_info}")
                 self.cancel_open_order()
 
     def _is_within_activation_bounds(self, order_price: Decimal, side: TradeType, order_type: OrderType) -> bool:

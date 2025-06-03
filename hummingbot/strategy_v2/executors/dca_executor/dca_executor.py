@@ -3,6 +3,7 @@ import logging
 import math
 from decimal import Decimal
 from typing import Dict, List, Optional, Union
+import traceback
 
 from hummingbot.connector.connector_base import ConnectorBase
 from hummingbot.core.data_type.common import OrderType, PositionAction, PriceType, TradeType
@@ -284,17 +285,22 @@ class DCAExecutor(ExecutorBase):
             close_price = self.get_price(connector_name=self.config.connector_name,
                                          trading_pair=self.config.trading_pair)
             order_price = self.config.prices[next_level]
+            
+            # Get call stack for debugging
+            call_stack = traceback.format_stack()
+            call_info = f"Called from: {call_stack[-2].strip()}"
+            
             if self._is_within_activation_bounds(order_price, close_price) and not self.is_expired:
                 self.logger().info(f"DCA Executor ID: {self.config.id} - Creating DCA order for level {next_level}! "
-                                   f"Order price: {order_price}, Current price: {close_price}")
+                                   f"Order price: {order_price}, Current price: {close_price}. {call_info}")
                 self.create_dca_order(level=next_level)
             else:
                 if self.is_expired:
                     self.logger().warning(f"DCA Executor ID: {self.config.id} - Level {next_level} not created due to expiration! "
-                                          f"Order price: {order_price}, Current price: {close_price}")
+                                          f"Order price: {order_price}, Current price: {close_price}. {call_info}")
                 else:
                     self.logger().warning(f"DCA Executor ID: {self.config.id} - Level {next_level} not created due to activation bounds! "
-                                          f"Order price: {order_price}, Current price: {close_price}")
+                                          f"Order price: {order_price}, Current price: {close_price}. {call_info}")
 
     def create_dca_order(self, level: int):
         """
